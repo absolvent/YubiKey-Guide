@@ -1,18 +1,5 @@
-This is a practical guide to using [YubiKey](https://www.yubico.com/faq/yubikey/) as a [SmartCard](https://security.stackexchange.com/questions/38924/how-does-storing-gpg-ssh-private-keys-on-smart-cards-compare-to-plain-usb-drives) for storing GPG encryption and signing keys.
+This is a practical guide to using [YubiKey](https://www.yubico.com/faq/yubikey/) as a [SmartCard](https://security.stackexchange.com/questions/38924/how-does-storing-gpg-ssh-private-keys-on-smart-cards-compare-to-plain-usb-drives) for storing GPG encryption and signing keys, using the YubiKey as OTP device and FIDO U2F device.
 
-An authentication key can also be created for SSH and used with [gpg-agent](https://unix.stackexchange.com/questions/188668/how-does-gpg-agent-work/188813#188813).
-
-Keys stored on a smartcard like YubiKey seem more difficult to steal than ones stored on disk, and are convenient for everyday use.
-
-Instructions written for Debian GNU/Linux 8 (jessie) using YubiKey 4 in OTP+CCID mode. Note, older YubiKeys are limited to 2048 bit RSA keys.
-
-Debian live install images are available from [here](https://www.debian.org/CD/live/) and are suitable for writing to USB drives.
-
-Programming YubiKey for GPG keys still lets you use its two slots - [OTP](https://www.yubico.com/faq/what-is-a-one-time-password-otp/) and [static password](https://www.yubico.com/products/services-software/personalization-tools/static-password/) modes, for example.
-
-If you have a comment or suggestion, please open an [issue](https://github.com/drduh/YubiKey-Guide/issues) on GitHub.
-
-- [Purchase YubiKey](#purchase-yubikey)
 - [Install required software](#install-required-software)
 - [Creating keys](#creating-keys)
   - [Create temporary working directory for GPG](#create-temporary-working-directory-for-gpg)
@@ -57,87 +44,11 @@ If you have a comment or suggestion, please open an [issue](https://github.com/d
 - [Troubleshooting](#troubleshooting)
 - [References](#references)
 
-# Purchase YubiKey
-
-https://www.yubico.com/products/yubikey-hardware/
-
-https://www.yubico.com/store/
-
-https://www.amazon.com/Yubico/b/ref=bl_dp_s_web_10358012011?ie=UTF8&node=10358012011
-
-Consider purchasing a pair and programming both in case of loss or damage to one of them.
-
 # Install required software
 
 You will need to install the following software:
 
     $ sudo apt-get install -y gnupg2 gnupg-agent pinentry-curses scdaemon pcscd yubikey-personalization libusb-1.0-0-dev
-
-You may also need to download and install more recent versions of [yubikey-personalization](https://developers.yubico.com/yubikey-personalization/Releases/) and [yubico-c](https://developers.yubico.com/yubico-c/Releases/):
-
-    $ curl -sO https://developers.yubico.com/yubikey-personalization/Releases/ykpers-1.17.3.tar.gz
-
-    $ !!.sig
-    curl -sO https://developers.yubico.com/yubikey-personalization/Releases/ykpers-1.17.3.tar.gz.sig
-
-    $ gpg ykpers*sig
-    gpg: assuming signed data in `ykpers-1.17.3.tar.gz'
-    gpg: Signature made Mon 28 Dec 2015 11:56:41 AM UTC
-    gpg:                using RSA key 0xBCA00FD4B2168C0A
-    gpg: Can't check signature: public key not found
-
-    $ gpg --recv 0xBCA00FD4B2168C0A
-    gpg: requesting key 0xBCA00FD4B2168C0A from hkps server hkps.pool.sks-keyservers.net
-    mp/2.3
-    [...]
-    gpg: key 0xBCA00FD4B2168C0A: public key "Klas Lindfors <klas@yubico.com>" imported
-    gpg: 3 marginal(s) needed, 1 complete(s) needed, PGP trust model
-    gpg: depth: 0  valid:   1  signed:   0  trust: 0-, 0q, 0n, 0m, 0f, 1u
-    gpg: Total number processed: 1
-    gpg:               imported: 1  (RSA: 1)
-
-    $ gpg ykpers*sig
-    gpg: assuming signed data in `ykpers-1.17.3.tar.gz'
-    gpg: Signature made Mon 28 Dec 2015 11:56:41 AM UTC
-    gpg:                using RSA key 0xBCA00FD4B2168C0A
-    gpg: Good signature from "Klas Lindfors <klas@yubico.com>" [unknown]
-    gpg: WARNING: This key is not certified with a trusted signature!
-    gpg:          There is no indication that the signature belongs to the owner.
-    Primary key fingerprint: 0A3B 0262 BCA1 7053 07D5  FF06 BCA0 0FD4 B216 8C0A
-
-    $ curl -sO https://developers.yubico.com/yubico-c/Releases/libyubikey-1.13.tar.gz
-
-    $ !!.sig
-    curl -sO https://developers.yubico.com/yubico-c/Releases/libyubikey-1.13.tar.gz.sig
-
-    $ gpg libyubi*sig
-    gpg: assuming signed data in `libyubikey-1.13.tar.gz'
-    gpg: Signature made Thu 05 Mar 2015 11:51:51 AM UTC
-    gpg:                using RSA key 0xBCA00FD4B2168C0A
-    gpg: Good signature from "Klas Lindfors <klas@yubico.com>" [unknown]
-    gpg: WARNING: This key is not certified with a trusted signature!
-    gpg:          There is no indication that the signature belongs to the owner.
-    Primary key fingerprint: 0A3B 0262 BCA1 7053 07D5  FF06 BCA0 0FD4 B216 8C0A
-
-    $ tar xf libyubikey-1.13.tar.gz
-
-    $ cd libyubikey-1.13
-
-    $ ./configure && make && sudo make install
-
-    $ cd ..
-
-    $ tar xf ykpers-1.17.3.tar.gz
-
-    $ cd ykpers-1.17.3
-
-    $ ./configure && make && sudo make install
-
-    $ sudo ldconfig
-
-If on [Tails](https://tails.boum.org/), you also need to install libykpers-1-1 from the testing repository. This is a temporary fix suggested on a [securedrop issue](https://github.com/freedomofpress/securedrop/issues/1035):
-
-    $ sudo apt-get install -t testing libykpers-1-1
 
 # Creating keys
 
@@ -618,19 +529,14 @@ Make sure the correct files were copied, then unmount and disconnected the encry
 
 Plug in your YubiKey and configure it:
 
-    $ ykpersonalize -m82
+    $ ykpersonalize -m86
     Firmware version 4.2.7 Touch level 527 Program sequence 4
 
-    The USB mode will be set to: 0x82
+    The USB mode will be set to: 0x86
 
     Commit? (y/n) [n]: y
 
-> The -m option is the mode command. To see the different modes, enter ykpersonalize –help. Mode 82 (in hex) enables the YubiKey NEO as a composite USB device (HID + CCID) and allows OTPs to be emitted while in use as a smart card.  Once you have changed the mode, you need to re-boot the YubiKey – so remove and re-insert it.
-
-> On YubiKey NEO with firmware version 3.3 or higher you can enable composite USB device with -m86 instead of -m82.
-
-https://www.yubico.com/2012/12/yubikey-neo-openpgp/
-https://www.yubico.com/2012/12/yubikey-neo-composite-device/
+> The -m option is the mode command. To see the different modes, enter ykpersonalize –help. Mode 86 (in hex) enables the YubiKey NEO as a composite USB device (HID + CCID + U2F) and allows OTPs to be emitted while in use as a smart card.  Once you have changed the mode, you need to re-boot the YubiKey – so remove and re-insert it.
 
 ## Configure smartcard
 
@@ -913,53 +819,13 @@ This file should be publicly shared:
 
     $ gpg --armor --export $KEYID > /mnt/public-usb-key/pubkey.txt
 
-Optionally, it may be uploaded to a [public keyserver](https://debian-administration.org/article/451/Submitting_your_GPG_key_to_a_keyserver):
-
-    $ gpg --send-key $KEYID
-    gpg: sending key 0xFF3E7D88647EBCDB to hkps server hkps.pool.sks-keyservers.net
-    [...]
-
-After a little while, it ought to propagate to [other](https://pgp.key-server.io/pks/lookup?search=doc%40duh.to&fingerprint=on&op=vindex) [servers](https://pgp.mit.edu/pks/lookup?search=doc%40duh.to&op=index).
+Upload your public key to [public keyserver](http://pgp.mit.edu/) and add it to the Confluence page
 
 ## Finish
 
 If all went well, you should now reboot or [securely delete](http://srm.sourceforge.net/) `$GNUPGHOME`.
 
 # Using keys
-
-## Create GPG configuration 
-
-Paste the following text into a terminal window to create a [recommended](https://github.com/drduh/config/blob/master/gpg.conf) GPG configuration:
-
-    $ cat << EOF > ~/.gnupg/gpg.conf
-    auto-key-locate keyserver
-    keyserver hkps://hkps.pool.sks-keyservers.net
-    keyserver-options no-honor-keyserver-url
-    keyserver-options ca-cert-file=/etc/sks-keyservers.netCA.pem
-    keyserver-options no-honor-keyserver-url
-    keyserver-options debug
-    keyserver-options verbose
-    personal-cipher-preferences AES256 AES192 AES CAST5
-    personal-digest-preferences SHA512 SHA384 SHA256 SHA224
-    default-preference-list SHA512 SHA384 SHA256 SHA224 AES256 AES192 AES CAST5 ZLIB BZIP2 ZIP Uncompressed
-    cert-digest-algo SHA512
-    s2k-cipher-algo AES256
-    s2k-digest-algo SHA512
-    charset utf-8
-    fixed-list-mode
-    no-comments
-    no-emit-version
-    keyid-format 0xlong
-    list-options show-uid-validity
-    verify-options show-uid-validity
-    with-fingerprint
-    use-agent
-    require-cross-certification
-    EOF
-
-To install the keyservers CA file:
-
-    $ sudo curl -s "https://sks-keyservers.net/sks-keyservers.netCA.pem" -o /etc/sks-keyservers.netCA.pem
 
 ## Import public key
 
@@ -969,21 +835,6 @@ Import it from a file:
     gpg: key 0xFF3E7D88647EBCDB: public key "Dr Duh <doc@duh.to>" imported
     gpg: Total number processed: 1
     gpg:               imported: 1  (RSA: 1)
-
-Or download from a keyserver:
-
-    $ gpg --recv 0xFF3E7D88647EBCDB
-    gpg: requesting key 0xFF3E7D88647EBCDB from hkps server hkps.pool.sks-keyservers.net
-    [...]
-    gpg: key 0xFF3E7D88647EBCDB: public key "Dr Duh <doc@duh.to>" imported
-    gpg: Total number processed: 1
-    gpg:               imported: 1  (RSA: 1)
-
-You may get an error `gpgkeys: HTTP fetch error 1: unsupported protocol` -- this means you need to install a special version of curl which supports gnupg:
-
-```
-$ sudo apt-get install gnupg-curl
-```
 
 ## Insert YubiKey
 
@@ -1022,6 +873,8 @@ Check the card's status:
 `sec#` indicates master key is not available (as it should be stored encrypted offline).
 
 ## GnuPG
+
+`NOTE:` when executing the following commands replace the `0xFF3E7D88647EBCDB` with your public key's id
 
 ### Trust master key
 
@@ -1222,7 +1075,7 @@ If you are using Linux on the desktop, you may want to use `/usr/bin/pinentry-gn
 
 ### Copy public key to server
 
-There is a `-L` option of `ssh-add` that lists public key parameters of all identities currently represented by the agent.  Copy and paste the following output to the server authorized_keys file:
+There is a `-L` option of `ssh-add` that lists public key parameters of all identities currently represented by the agent.  Copy and paste the following output to the server authorized_keys file, GitHub and any other service you use that requires your ssh key:
 
     $ ssh-add -L
     ssh-rsa AAAAB4NzaC1yc2EAAAADAQABAAACAz[...]zreOKM+HwpkHzcy9DQcVG2Nw== cardno:000605553211
@@ -1248,51 +1101,4 @@ There is a `-L` option of `ssh-add` that lists public key parameters of all iden
     debug1: Authentication succeeded (publickey).
     [...]
 
-# Troubleshooting
-
-- If you don't understand some option, read `man gpg`.
-
-- If you encounter problems connecting to YubiKey with GPG, simply try unplugging and re-inserting your YubiKey, and restarting the `gpg-agent` process.
-
-- If you receive the error, `gpg: decryption failed: secret key not available` - you likely need to install GnuPG version 2.x.
-
-- If you receive the error, `Yubikey core error: no yubikey present` - make sure the YubiKey is inserted correctly. It should blink once when plugged in.
-
-- If you still receive the error, `Yubikey core error: no yubikey present` - you likely need to install newer versions of yubikey-personalize as outlined in [Install required software](#install-required-software).
-
-- If you receive the error, `Yubikey core error: write error` - YubiKey is likely locked. Install and run yubikey-personalization-gui to unlock it.
-
-- If you receive the error, `Key does not match the card's capability` - you likely need to use 2048 bit RSA key sizes.
-
-- If you receive the error, `sign_and_send_pubkey: signing failed: agent refused operation` - you probably have ssh-agent running.  Make sure you replaced ssh-agent with gpg-agent as noted above.
-
-- If you totally screw up, you can [reset the card](https://developers.yubico.com/ykneo-openpgp/ResetApplet.html).
-
-# References
-
-<https://developers.yubico.com/yubikey-personalization/>
-
-<https://developers.yubico.com/PGP/Card_edit.html>
-
-<https://blog.josefsson.org/2014/06/23/offline-gnupg-master-key-and-subkeys-on-yubikey-neo-smartcard/>
-
-<https://www.esev.com/blog/post/2015-01-pgp-ssh-key-on-yubikey-neo/>
-
-<https://blog.habets.se/2013/02/GPG-and-SSH-with-Yubikey-NEO>
-
-<https://trmm.net/Yubikey>
-
-<https://rnorth.org/gpg-and-ssh-with-yubikey-for-mac>
-
-<https://jclement.ca/articles/2015/gpg-smartcard/>
-
-<https://github.com/herlo/ssh-gpg-smartcard-config>
-
-<http://www.bootc.net/archives/2013/06/09/my-perfect-gnupg-ssh-agent-setup/>
-
-<https://help.riseup.net/en/security/message-security/openpgp/best-practices>
-
-<https://alexcabal.com/creating-the-perfect-gpg-keypair/>
-
-<https://www.void.gr/kargig/blog/2013/12/02/creating-a-new-gpg-key-with-subkeys/>
 
