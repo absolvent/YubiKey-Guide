@@ -27,7 +27,6 @@ This is a practical guide to using [YubiKey](https://www.yubico.com/faq/yubikey/
   - [Export public key](#export-public-key)
   - [Finish](#finish)
 - [Using keys](#using-keys)
-  - [Create GPG configuration](#create-gpg-configuration)
   - [Import public key](#import-public-key)
   - [Insert YubiKey](#insert-yubikey)
   - [GnuPG](#gnupg)
@@ -41,8 +40,6 @@ This is a practical guide to using [YubiKey](https://www.yubico.com/faq/yubikey/
     - [Replace ssh-agent with gpg-agent](#replace-ssh-agent-with-gpg-agent)
     - [Copy public key to server](#copy-public-key-to-server)
     - [Connect with public key authentication](#connect-with-public-key-authentication)
-- [Troubleshooting](#troubleshooting)
-- [References](#references)
 
 # Install required software
 
