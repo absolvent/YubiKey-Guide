@@ -1058,8 +1058,6 @@ Paste the following text into a terminal window to create a [recommended](https:
     pinentry-program /usr/bin/pinentry-curses
     default-cache-ttl 60
     max-cache-ttl 120
-    write-env-file
-    use-standard-socket
     EOF
 
 If you are using Linux on the desktop, you may want to use `/usr/bin/pinentry-gnome3` to use a GUI manager.
@@ -1067,8 +1065,8 @@ If you are using Linux on the desktop, you may want to use `/usr/bin/pinentry-gn
 ### Replace ssh-agent with gpg-agent
 
     $ pkill ssh-agent ; pkill gpg-agent ; \
-      eval $(gpg-agent --daemon --enable-ssh-support --use-standard-socket \
-      --log-file ~/.gnupg/gpg-agent.log --write-env-file)
+      eval $(gpg-agent --daemon --enable-ssh-support \
+      --log-file ~/.gnupg/gpg-agent.log)
 
 ### Copy public key to server
 
